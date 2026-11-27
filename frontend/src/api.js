@@ -19,6 +19,9 @@ export const api = {
   policy: () => j("/api/重启策"),
   setPolicy: (body) => j("/api/重启策", { method: "POST", body: JSON.stringify(body) }),
   align: () => j("/api/对读"),
+  replayOrder: (id) => j(`/api/对读/回放/${id}`),
+  arm: () => j("/api/口径"),
   settings: () => j("/api/舱规"),
+  setSetting: (body) => j("/api/舱规", { method: "POST", body: JSON.stringify(body) }),
   events: () => j("/api/事件"),
 };

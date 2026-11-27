@@ -5,6 +5,7 @@ from app.config import PROJECT_NAME
 from app.routers import align, images, orders, pods, policy, probes, quotas, settings
 from app.seed import seed_if_empty
 
+# seed_if_empty 总会先建表并补列（旧库也会迁移），空库才灌种子。
 seed_if_empty()
 
 app = FastAPI(title=PROJECT_NAME)

@@ -154,6 +154,24 @@ th { color: var(--muted); font-weight: 600; font-size: 0.75rem; letter-spacing: 
 .tag.warn { background: rgba(230, 180, 34, 0.15); color: var(--yellow); }
 
 .row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+.pod-action { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.gate-banner { border-left: 4px solid var(--line); }
+.gate-banner.ok { border-left-color: var(--ok); }
+.gate-banner.bad { border-left-color: var(--bad); }
+.gate-banner.warn { border-left-color: var(--yellow); }
+.arm-note { border-left: 4px solid var(--yellow); font-size: 0.9rem; }
+.arm-note ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.arm-note .muted, .muted { color: var(--muted); }
+.replay-box pre {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 0.8rem;
+  overflow: auto;
+}
 .stat-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

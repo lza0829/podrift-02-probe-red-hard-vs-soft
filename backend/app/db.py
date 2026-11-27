@@ -5,26 +5,49 @@ from app.config import DB_PATH
 
 
 def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    # isolation_level=None => autocommit; we manage explicit BEGIN/COMMIT below
+    # so a whole 启停 can be one atomic unit and readers never see a half-start.
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=5.0, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
 @contextmanager
-def db():
+def _tx(immediate: bool):
     conn = connect()
     try:
+        conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
         yield conn
-        conn.commit()
+        conn.execute("COMMIT")
     except Exception:
-        conn.rollback()
+        try:
+            conn.execute("ROLLBACK")
+        except sqlite3.Error:
+            pass
         raise
     finally:
         conn.close()
 
 
+def db():
+    """Deferred transaction, for reads and simple single-statement writes."""
+    return _tx(immediate=False)
+
+
+def write_tx():
+    """Serialized write transaction.
+
+    Takes the SQLite write lock up front (BEGIN IMMEDIATE) so that mutating the
+    probe light and submitting a 启停单 cannot interleave into two conflicting
+    outcomes. Whichever commits first wins; the other re-reads committed state.
+    """
+    return _tx(immediate=True)
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
+    conn.execute("PRAGMA journal_mode = WAL")
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS images (
@@ -54,6 +77,11 @@ def init_schema(conn: sqlite3.Connection) -> None:
           status TEXT NOT NULL,
           note TEXT,
           created_at TEXT NOT NULL,
+          probe_color TEXT,
+          probe_fail_streak INTEGER,
+          probe_threshold INTEGER,
+          gate TEXT,
+          prev_run_state TEXT,
           FOREIGN KEY(pod_id) REFERENCES pods(id)
         );
         CREATE TABLE IF NOT EXISTS probes (
@@ -89,3 +117,19 @@ def init_schema(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    _migrate(conn)
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Add probe-gate audit columns to databases created before the arm landed."""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(start_orders)").fetchall()}
+    additions = {
+        "probe_color": "TEXT",
+        "probe_fail_streak": "INTEGER",
+        "probe_threshold": "INTEGER",
+        "gate": "TEXT",
+        "prev_run_state": "TEXT",
+    }
+    for name, ddl in additions.items():
+        if name not in cols:
+            conn.execute(f"ALTER TABLE start_orders ADD COLUMN {name} {ddl}")

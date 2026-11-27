@@ -8,12 +8,12 @@ export default function Pods() {
     <>
       <div className="hero">
         <h1>舱体</h1>
-        <p>主舱登记、旁挂 sidecar、运行态与探针旁读。</p>
+        <p>主舱登记、旁挂 sidecar、运行态与探针旁读。开单前红灯的舱体标记为启动将硬拒。</p>
       </div>
       <div className="panel">
         <table>
           <thead>
-            <tr><th>舱</th><th>镜像</th><th>拉取</th><th>运行</th><th>sidecar</th><th>配额</th><th>探针</th></tr>
+            <tr><th>舱</th><th>镜像</th><th>拉取</th><th>运行</th><th>sidecar</th><th>配额</th><th>探针</th><th>开单前</th></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
@@ -25,6 +25,9 @@ export default function Pods() {
                 <td>{r.sidecar || "—"}</td>
                 <td>{r.cpu_quota}c / {r.mem_quota_mb}MB</td>
                 <td><span className={`tag ${r.probe_color === "绿" ? "ok" : "bad"}`}>{r.probe_color} · {r.fail_streak}</span></td>
+                <td>
+                  <span className={`tag ${r["开单前可起"] ? "ok" : "bad"}`}>{r["开单前门"]}</span>
+                </td>
               </tr>
             ))}
           </tbody>
